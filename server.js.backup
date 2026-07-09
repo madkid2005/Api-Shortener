@@ -1,0 +1,69 @@
+const fastify = require('fastify')({ logger: true });
+const cors = require('@fastify/cors');
+const swagger = require('@fastify/swagger');
+const swaggerUi = require('@fastify/swagger-ui');
+
+const PORT = process.env.PORT || 3001;
+
+// ============ Swagger Setup ============
+fastify.register(swagger, {
+  openapi: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Shortener API',
+      description: 'URL Shortener Service',
+      version: '1.0.0',
+      contact: {
+        name: 'API Frooshi',
+        email: 'support@apifrooshi.com'
+      }
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+        description: 'Development Server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        apiKey: {
+          type: 'apiKey',
+          name: 'X-API-Key',
+          in: 'header'
+        }
+      }
+    },
+    security: [{ apiKey: [] }]
+  }
+});
+
+fastify.register(swaggerUi, {
+  routePrefix: '/docs'
+});
+
+// ============ CORS ============
+fastify.register(cors, { origin: '*' });
+
+// ============ Middleware ============
+fastify.addHook('preHandler', async (request, reply) => {
+  const apiKey = request.headers['x-api-key'];
+  if (!apiKey) {
+    return reply.status(401).send({ error: 'X-API-Key required' });
+  }
+});
+
+// ============ Routes ============
+fastify.get('/', async () => {
+  return {
+    service: 'Shortener API',
+    version: '1.0.0',
+    docs: `http://localhost:${PORT}/docs`
+  };
+});
+
+// ============ Start Server ============
+fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
+  if (err) throw err;
+  console.log(`🚀 Shortener API running on http://localhost:${PORT}`);
+  console.log(`📚 Swagger Docs: http://localhost:${PORT}/docs`);
+});
